@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  cache-directus:
+    image: redis:6
+    networks:
+      - directus-network
+
+  postgres:
+    image: postgres:14
+    container_name: postgres
+    environment:
+      POSTGRES_DB: ${DBDIRECTUS_DATABASE}
+      POSTGRES_USER: ${DBDIRECTUS_USER}
+      POSTGRES_PASSWORD: ${DBDIRECTUS_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - directus-network
+
+  directus:
+    image: directus/directus:10.13.1
+    container_name: directus
+    ports:
+      - 8055:8055
+    volumes:
+      - ./uploads:/directus/uploads
+      - ./extensions:/directus/extensions
+    depends_on:
+      - cache-directus
+      - postgres
+    networks:
+      - directus-network
+
+    environment:
+      KEY: ${DIRECTUS_KEY}
+      SECRET: ${ADMINDIRECTUS_SECRET}
+      DB_CLIENT: "pg"
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: ${DBDIRECTUS_DATABASE}
+      CORS_ENABLED: true
+      CORS_ORIGIN: "*"
+      CORS_METHODS: GET,POST,PUT,DELETE
+      CORS_ALLOWED_HEADERS: Content-Type,X-Requested-With
+      CORS_EXPOSED_HEADERS: Content-Range,X-Content-Range
+      DB_USER: ${DBDIRECTUS_USER}
+      DB_PASSWORD: ${DBDIRECTUS_PASSWORD}
+      CACHE_ENABLED: "true"
+      CACHE_STORE: "redis"
+      REDIS: "redis://cache-directus:6379"
+      ADMIN_EMAIL: ${ADMINDIRECTUS_EMAIL}
+      ADMIN_PASSWORD: ${ADMINDIRECTUS_PASSWORD}
+      CONTENT_SECURITY_POLICY_DIRECTIVES__FRAME_SRC: ${CONTENT_SECURITY_POLICY_DIRECTIVES__FRAME_SRC}
+networks:
+  directus-network:
+
+
+volumes:
+  postgres-data:
+
